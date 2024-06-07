@@ -45,10 +45,19 @@ class UserManager():
             self.sql_close_connection(connection)
     
     def get_user_id(self, id: int) -> Dict[str, any]|bool:
+        """Gets an user by an id
+
+        Args:
+            id (int): Id to find
+
+        Returns:
+            Dict[str, any]|bool: The info of the user or False if there is not an user with this id
+        """
+
         connection=sqlite3.connect(self.__database)
         cursor = connection.cursor()
         query = f"SELECT * FROM {self.__table} WHERE id = {id}"
-        
+
         try:
             cursor.execute(query)
             connection.commit()
@@ -62,6 +71,11 @@ class UserManager():
             self.sql_close_connection(connection)
     
     def get_all_users(self) -> Dict[str, List[any]]:
+        """Gets all users in the database
+
+        Returns:
+            Dict[str, List[any]]: The users info
+        """
         connection=sqlite3.connect(self.__database)
         cursor = connection.cursor()
         query = f"SELECT * FROM {self.__table}"
@@ -76,10 +90,23 @@ class UserManager():
         self.sql_close_connection(connection)
 
     def sql_close_connection(self, connection: sqlite3.Connection) -> None:
+        """Closes the connection
+
+        Args:
+            connection (sqlite3.Connection): The connection to close
+        """
         connection.close()
 
     @staticmethod
     def get_user_output_format(rows: list) -> List[Dict[str, any]]:
+        """Gets tha output user format
+
+        Args:
+            rows (list): The rows obtained in the query
+
+        Returns:
+            List[Dict[str, any]]: The list with te right format
+        """
         return [
                 {
                     "id": row[0],

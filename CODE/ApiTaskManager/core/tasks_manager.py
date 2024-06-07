@@ -49,6 +49,12 @@ class TaskManager():
             self.sql_close_connection(connection)
     
     def get_all_tasks(self) -> Dict[str, List[any]]:
+        """Gets all tasks
+
+        Returns:
+            Dict[str, List[any]]: Tasks info
+        """
+
         connection=sqlite3.connect(self.__database)
         cursor = connection.cursor()
         query = f"SELECT * FROM {self.__table}"
@@ -64,10 +70,23 @@ class TaskManager():
         self.sql_close_connection(connection)
 
     def sql_close_connection(self, connection: sqlite3.Connection) -> None:
+        """Coloses the connection
+
+        Args:
+            connection (sqlite3.Connection): The connection to close
+        """
         connection.close()
 
     @staticmethod
     def get_task_output_format(rows: list) -> List[Dict[str,any]]:
+        """Gets tha output task format
+
+        Args:
+            rows (list): The rows obtained in the query
+
+        Returns:
+            List[Dict[str, any]]: The list with te right format
+        """
         return [
                 {
                     "id": row[0],
