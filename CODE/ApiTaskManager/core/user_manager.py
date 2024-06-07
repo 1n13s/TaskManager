@@ -44,15 +44,43 @@ class UserManager():
         finally:
             self.sql_close_connection(connection)
     
+    def get_user_id(self, id: int) -> Dict[str, any]|bool:
+        connection=sqlite3.connect(self.__database)
+        cursor = connection.cursor()
+        query = f"SELECT * FROM {self.__table} WHERE id = {id}"
+        
+        try:
+            cursor.execute(query)
+            connection.commit()
+            rows = cursor.fetchall()
+            return False if len(rows) <= 0 else {"user": self.get_user_output_format(rows)}
+        
+        except sqlite3.Error as e:
+            return {"message": f"The find of the user has failed: {e}"}
+
+        finally:
+            self.sql_close_connection(connection)
+    
     def get_all_users(self) -> Dict[str, List[any]]:
-        connection=sqlite3.connect("../DATABASE/taskmanager.db")
+        connection=sqlite3.connect(self.__database)
         cursor = connection.cursor()
         query = f"SELECT * FROM {self.__table}"
         try:
             cursor.execute(query)
             connection.commit()
             rows = cursor.fetchall()
-            users = [
+            return {"users": self.get_user_output_format(rows)}
+        except sqlite3.Error as e:
+            print("Getting users has failed", e)
+
+        self.sql_close_connection(connection)
+
+    def sql_close_connection(self, connection: sqlite3.Connection) -> None:
+        connection.close()
+
+    @staticmethod
+    def get_user_output_format(rows: list) -> List[Dict[str, any]]:
+        return [
                 {
                     "id": row[0],
                     "email": row[1],
@@ -64,11 +92,3 @@ class UserManager():
                 }
                 for row in rows
             ]
-            return {"users": users}
-        except sqlite3.Error as e:
-            print("Getting users has failed", e)
-
-        self.sql_close_connection(connection)
-
-    def sql_close_connection(self, connection: sqlite3.Connection) -> None:
-        connection.close()
