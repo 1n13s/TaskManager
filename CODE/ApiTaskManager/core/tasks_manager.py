@@ -1,12 +1,12 @@
 import sqlite3
 from typing import Dict, List
-class UserManager():
-    """Manages the Users in the Database
+class TaskManager():
+    """Manages the Tasks in the Database
     """
     def __init__(self, database: str) -> None:
-        """Initializes db"""
+        """Initializes the task manager"""
         self.__database=database
-        self.__table="users"
+        self.___table="tasks"
 
     def insert_user(self, user_info: dict) -> Dict[str, str]:
         """Inserts a user from the info of the user provided
