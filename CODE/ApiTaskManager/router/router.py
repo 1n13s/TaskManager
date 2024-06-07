@@ -17,6 +17,10 @@ def test_connection():
     """Root"""
     return {"Message":"Connection Succesfully"}
 
+@router.post("/auth")
+def auth(token: str):
+    return{f"You have benn authenticated with token {token}"}
+
 @router.post("/add_user", status_code=status.HTTP_201_CREATED)
 def add_user(user: AddUserSchemaInput, user_manager: UserManager = Depends(get_user_manager)):
     """Add user"""
