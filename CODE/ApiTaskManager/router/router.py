@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends
 from starlette import status
+from passlib.context import CryptContext
+import bcrypt
 from ApiTaskManager.core.user_manager import UserManager
 from ApiTaskManager.core.tasks_manager import TaskManager
-from .type_in import AddUserSchemaInput, AddTaskSchemaInput
-
+from .type_in import AddUserSchemaInput, AddTaskSchemaInput, AuthUserSchemaInput
 router = APIRouter()
+
+bcrypt_context = CryptContext(schemes = ["bcrypt"], deprecated="auto")
 
 def get_user_manager():
     return UserManager("../DATABASE/taskmanager.db")
@@ -18,8 +21,8 @@ def test_connection():
     return {"Message":"Connection Succesfully"}
 
 @router.post("/auth")
-def auth(token: str):
-    return{f"You have benn authenticated with token {token}"}
+def auth(auth_info: AuthUserSchemaInput, user_manager: UserManager = Depends(get_user_manager)):
+    return user_manager.auth_user(dict(auth_info))
 
 @router.post("/add_user", status_code=status.HTTP_201_CREATED)
 def add_user(user: AddUserSchemaInput, user_manager: UserManager = Depends(get_user_manager)):

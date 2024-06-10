@@ -40,3 +40,13 @@ class AddTaskSchemaInput(BaseModel):
             }
         }
 
+class AuthUserSchemaInput(BaseModel):
+    user_name: str = Field(min_length=1)
+    hashed_password: str = Field(min_length=1)
+    class Config:
+        schema_extra = {
+            'example':{
+                "user_name": "jhon_doe",
+                "hashed_password": "password123"
+            }
+        }
