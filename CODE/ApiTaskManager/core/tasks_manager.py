@@ -1,4 +1,4 @@
-import sqlite3
+from fastapi.responses import JSONResponse
 from typing import Dict, List
 from .user_manager import UserManager
 from ..database.connection import session, Base, engine
@@ -9,7 +9,7 @@ from ..router.type_in import AddTaskSchemaInput
 class TaskManager():
     """Manages the Tasks in the Database
     """
-    def __init__(self, database: str) -> None:
+    def __init__(self) -> None:
         """Initializes the task manager"""
         self.__db__=session()
 
@@ -26,15 +26,16 @@ class TaskManager():
         try:
             user=UserManager()
             if not user.get_user_id(task_info.id_user):
-                return {"message": "There is not any user with this id"}
+                return JSONResponse(content={"message": "There is not any user with this id"}, status_code=406)
+            
             new_task = Tasks(**task_info.dict())
             self.__db__.add(new_task)
             self.__db__.commit()
 
-            return {"message": "The task has been successfully inserted"}
+            return JSONResponse(content={"message": "The task has been successfully inserted"})
         
         except Exception as e:
-            return {"message": f"The insert of the task has failed: {e}"}
+            return JSONResponse(content={"message": f"The insert of the task has failed: {e}"}, status_code=500)
         
         finally:
             self.__db__.close()
@@ -47,10 +48,10 @@ class TaskManager():
         """
 
         try:
-           return {"tasks": self.__db__.query(Tasks).filter(Tasks.id_user==user_id).all()}
-
+            return JSONResponse(content={"tasks": self.__db__.query(Tasks).filter(Tasks.id_user==user_id).all()})
+        
         except Exception as e:
-           return{"message": f"Getting users has failed {e}"}
+           return JSONResponse(content={"message": f"Getting users has failed {e}"}, status_code=500)
 
         finally:
             self.__db__.close()

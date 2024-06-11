@@ -1,4 +1,4 @@
-import sqlite3
+from fastapi.responses import JSONResponse
 from typing import Dict, List
 from passlib.context import CryptContext
 from ..database.connection import session, Base, engine
@@ -16,7 +16,7 @@ class UserManager():
         try:
             self.__db__=session()
         except Exception as e:
-            return e
+            return JSONResponse(content={"message": "The db connection has failed"})
 
     def add_user(self, user_info: AddUserSchemaInput) -> Dict[str, str]:
         """Adds an user from the info of the user provided
@@ -30,16 +30,16 @@ class UserManager():
 
         try:
             if not self.validate_user_name(user_info.user_name):
-                return {"message": "This user name has been repeated"}
+                return JSONResponse(content={"message": "This user name has been repeated"})
             
             user_info.hashed_password=bcrypt_context.hash(user_info.hashed_password)
             new_user = Users(**user_info.dict())
             self.__db__.add(new_user)
             self.__db__.commit()
-            return {"message": "This user has been added successfully"}
+            return JSONResponse(content={"message": "This user has been added successfully"})
            
         except Exception as e:
-            return {"message": f"The insert of the user has failed: {e}"}
+            return JSONResponse(content={"message": f"The insert of the user has failed: {e}"})
         
         finally:
             self.__db__.close()
@@ -55,10 +55,10 @@ class UserManager():
         """
 
         try:
-            return {"users": self.__db__.query(Users).filter(Users.id==id).all()}
+            return JSONResponse(content={"users": self.__db__.query(Users).filter(Users.id==id).all()})
         
         except Exception as e:
-            return {"message": f"The find of the user has failed: {e}"}
+            return JSONResponse(content={"message": f"The find of the user has failed: {e}"})
         
         finally:
             self.__db__.close()
@@ -71,10 +71,10 @@ class UserManager():
         """
 
         try:
-            return {"users": self.__db__.query(Users).all()}
+            return JSONResponse(content={"users": self.__db__.query(Users).all()})
         
         except Exception as e:
-            return {"message": f"Getting users has failed {e}"}
+            return JSONResponse({"message": f"Getting users has failed {e}"})
 
         finally:
             self.__db__.close()
@@ -96,15 +96,15 @@ class UserManager():
                 .first()
             ):
                 if bcrypt_context.verify(auth_info.hashed_password ,user.hashed_password):
-                    return {"message":"You have been authenticated successfully"}
+                    return JSONResponse(content={"message":"You have been authenticated successfully"})
                 else:
-                    return {"message":"The password is incorrect"}
+                    return JSONResponse(content={"message":"The password is incorrect"})
 
             else:
-                return {"message":"The user name does not exist"}
+                return JSONResponse(content={"message":"The user name does not exist"})
         
         except Exception as e:
-            return {"message": f"Auth user has failed {e}"}
+            return JSONResponse(content={"message": f"Auth user has failed {e}"})
 
         finally:
             self.__db__.close()
@@ -120,7 +120,7 @@ class UserManager():
         """
         try:
             return not self.__db__.query(Users).filter(Users.user_name==user_name).first()
-        except sqlite3.Error as e:
-            return {"message": f"The find of the user has failed: {e}"}
+        except Exception as e:
+            return JSONResponse(content={"message": f"The find of the user has failed: {e}"})
         finally:
             self.__db__.close()

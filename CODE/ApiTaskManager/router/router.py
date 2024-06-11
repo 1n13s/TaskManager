@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from starlette import status
 from passlib.context import CryptContext
-import bcrypt
+from ApiTaskManager.auth.jwt_create import *
 from ApiTaskManager.core.user_manager import UserManager
 from ApiTaskManager.core.tasks_manager import TaskManager
 from .type_in import AddUserSchemaInput, AddTaskSchemaInput, AuthUserSchemaInput, GetUserTasksSchemaInput
@@ -13,20 +13,24 @@ def get_user_manager():
     return UserManager()
 
 def get_task_manager():
-    return TaskManager("../DATABASE/taskmanager.db")
+    return TaskManager()
 
 @router.get("/",status_code=status.HTTP_200_OK)
 def test_connection():
     """Root"""
-    return {"Message":"Connection Succesfully"}
+    return {"Message":"You have been connected successfully"}
 
 @router.post("/user_id", status_code=status.HTTP_200_OK)
 def get_id(id: int, user_manager: UserManager = Depends(get_user_manager)):
     return user_manager.get_user_id(id)
 
-@router.post("/auth")
+@router.post("/auth-user")
 def auth(auth_info: AuthUserSchemaInput, user_manager: UserManager = Depends(get_user_manager)):
     return user_manager.auth_user(auth_info)
+
+@router.post("/auth-token")
+def auth_token(user: AuthUserSchemaInput):
+    return write_token(user.dict())
 
 @router.post("/add_user", status_code=status.HTTP_201_CREATED)
 def add_user(user: AddUserSchemaInput, user_manager: UserManager = Depends(get_user_manager)):
