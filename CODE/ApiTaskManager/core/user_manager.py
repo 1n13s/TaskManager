@@ -11,14 +11,8 @@ Base.metadata.create_all(bind=engine)
 class UserManager():
     """Manages the Users in the Database
     """
-    def __init__(self) -> None:
-        """Initializes db"""
-        try:
-            self.__db__=session()
-        except Exception as e:
-            return JSONResponse(content={"message": "The db connection has failed"})
-
-    def add_user(self, user_info: AddUserSchemaInput) -> Dict[str, str]:
+    @staticmethod
+    def add_user(user_info: AddUserSchemaInput) -> Dict[str, str]:
         """Adds an user from the info of the user provided
 
         Args:
@@ -29,22 +23,24 @@ class UserManager():
         """
 
         try:
-            if not self.validate_user_name(user_info.user_name):
+            if not UserManager.validate_user_name(user_info.user_name):
                 return JSONResponse(content={"message": "This user name has been repeated"})
             
             user_info.hashed_password=bcrypt_context.hash(user_info.hashed_password)
             new_user = Users(**user_info.dict())
-            self.__db__.add(new_user)
-            self.__db__.commit()
+            db=session()
+            db.add(new_user)
+            db.commit()
             return JSONResponse(content={"message": "This user has been added successfully"})
            
         except Exception as e:
             return JSONResponse(content={"message": f"The insert of the user has failed: {e}"})
         
         finally:
-            self.__db__.close()
+            db.close()
     
-    def get_user_id(self, id: int) -> Dict[str, any]:
+    @staticmethod
+    def get_user_id(id: int) -> Dict[str, any]:
         """Gets an user by an id
 
         Args:
@@ -55,15 +51,17 @@ class UserManager():
         """
 
         try:
-            return JSONResponse(content={"users": self.__db__.query(Users).filter(Users.id==id).all()})
+            db=session()
+            return {"users": db.query(Users).filter(Users.id==id).all()}
         
         except Exception as e:
             return JSONResponse(content={"message": f"The find of the user has failed: {e}"})
         
         finally:
-            self.__db__.close()
+            db.close()
     
-    def get_all_users(self) -> Dict[str, List[any]]:
+    @staticmethod
+    def get_all_users() -> Dict[str, List[any]]:
         """Gets all users in the database
 
         Returns:
@@ -71,15 +69,17 @@ class UserManager():
         """
 
         try:
-            return JSONResponse(content={"users": self.__db__.query(Users).all()})
+            db=session()
+            return {"users": db.query(Users).all()}
         
         except Exception as e:
             return JSONResponse({"message": f"Getting users has failed {e}"})
 
         finally:
-            self.__db__.close()
+            db.close()
     
-    def auth_user(self, auth_info: dict) -> Dict[str, str]:
+    @staticmethod
+    def auth_user(auth_info: dict) -> Dict[str, str]:
         """Authenticates an user
 
         Args:
@@ -90,8 +90,9 @@ class UserManager():
         """
 
         try:
+            db=session()
             if (
-                user := self.__db__.query(Users)
+                user := db.query(Users)
                 .filter(Users.user_name == auth_info["user_name"])
                 .first()
             ):
@@ -107,9 +108,10 @@ class UserManager():
             return JSONResponse(content={"message": f"Auth user has failed {e}"})
 
         finally:
-            self.__db__.close()
+            db.close()
 
-    def validate_user_name(self, user_name: str) -> bool:
+    @staticmethod
+    def validate_user_name(user_name: str) -> bool:
         """Validates if the user_name is repeated
 
         Args:
@@ -119,8 +121,9 @@ class UserManager():
             bool: The user name validation
         """
         try:
-            return not self.__db__.query(Users).filter(Users.user_name==user_name).first()
+            db=session()
+            return not db.query(Users).filter(Users.user_name==user_name).first()
         except Exception as e:
             return JSONResponse(content={"message": f"The find of the user has failed: {e}"})
         finally:
-            self.__db__.close()
+            db.close()

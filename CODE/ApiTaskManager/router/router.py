@@ -9,43 +9,33 @@ router = APIRouter()
 
 bcrypt_context = CryptContext(schemes = ["bcrypt"], deprecated="auto")
 
-def get_user_manager():
-    return UserManager()
-
-def get_task_manager():
-    return TaskManager()
-
 @router.get("/",status_code=status.HTTP_200_OK)
 def test_connection():
     """Root"""
     return {"Message":"You have been connected successfully"}
 
 @router.post("/user_id", status_code=status.HTTP_200_OK)
-def get_id(id: int, user_manager: UserManager = Depends(get_user_manager)):
-    return user_manager.get_user_id(id)
-
-@router.post("/auth-user")
-def auth(auth_info: AuthUserSchemaInput, user_manager: UserManager = Depends(get_user_manager)):
-    return user_manager.auth_user(auth_info)
+def get_id(id: int):
+    return UserManager.get_user_id(id)
 
 @router.post("/add_user", status_code=status.HTTP_201_CREATED)
-def add_user(user: AddUserSchemaInput, user_manager: UserManager = Depends(get_user_manager)):
+def add_user(user: AddUserSchemaInput):
     """Add user"""
-    return user_manager.add_user(user)
+    return UserManager.add_user(user)
 
 @router.get("/get-users", status_code= status.HTTP_200_OK)
-def get_all_users(user_manager: UserManager = Depends(get_user_manager)):
+def get_all_users():
     """Get users
     """
-    return user_manager.get_all_users()
+    return UserManager.get_all_users()
 
 @router.post("/add-task", status_code=status.HTTP_201_CREATED)
-def add_task(task: AddTaskSchemaInput, task_manager: TaskManager = Depends(get_task_manager)):
-    return task_manager.insert_task(task)
+def add_task(task: AddTaskSchemaInput):
+    return TaskManager.insert_task(task)
 
 @router.post("/get-tasks", status_code=status.HTTP_200_OK)
-def get_user_tasks(id: GetUserTasksSchemaInput, task_manager: TaskManager = Depends(get_task_manager)):
+def get_user_tasks(id: GetUserTasksSchemaInput):
     try:
-        return task_manager.get_user_tasks(id.user_id)
+        return TaskManager.get_user_tasks(id.user_id)
     except Exception as e:
         print(f"Error en router{e}")
