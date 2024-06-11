@@ -28,10 +28,6 @@ def get_id(id: int, user_manager: UserManager = Depends(get_user_manager)):
 def auth(auth_info: AuthUserSchemaInput, user_manager: UserManager = Depends(get_user_manager)):
     return user_manager.auth_user(auth_info)
 
-@router.post("/auth-token")
-def auth_token(user: AuthUserSchemaInput):
-    return write_token(user.dict())
-
 @router.post("/add_user", status_code=status.HTTP_201_CREATED)
 def add_user(user: AddUserSchemaInput, user_manager: UserManager = Depends(get_user_manager)):
     """Add user"""

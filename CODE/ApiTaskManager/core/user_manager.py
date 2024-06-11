@@ -79,7 +79,7 @@ class UserManager():
         finally:
             self.__db__.close()
     
-    def auth_user(self, auth_info: AuthUserSchemaInput) -> Dict[str, str]:
+    def auth_user(self, auth_info: dict) -> Dict[str, str]:
         """Authenticates an user
 
         Args:
@@ -92,10 +92,10 @@ class UserManager():
         try:
             if (
                 user := self.__db__.query(Users)
-                .filter(Users.user_name == auth_info.user_name)
+                .filter(Users.user_name == auth_info["user_name"])
                 .first()
             ):
-                if bcrypt_context.verify(auth_info.hashed_password ,user.hashed_password):
+                if bcrypt_context.verify(auth_info["hashed_password"] ,user.hashed_password):
                     return JSONResponse(content={"message":"You have been authenticated successfully"})
                 else:
                     return JSONResponse(content={"message":"The password is incorrect"})
