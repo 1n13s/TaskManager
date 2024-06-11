@@ -9,7 +9,7 @@ class AddUserSchemaInput(BaseModel):
     first_name: str = Field(min_length=1)
     last_name: str = Field(min_length=1)
     hashed_password: str = Field(min_length=1)
-    is_active: bool
+    is_admin: bool
     class Config:
         schema_extra = {
             'example':{
@@ -18,7 +18,7 @@ class AddUserSchemaInput(BaseModel):
                 "first_name": "Jhon",
                 "last_name": "Doe",
                 "hashed_password": "password123",
-                "is_active": True
+                "is_admin": True
             }
         }
 
@@ -50,3 +50,13 @@ class AuthUserSchemaInput(BaseModel):
                 "hashed_password": "password123"
             }
         }
+
+class GetUserTasksSchemaInput(BaseModel):
+    user_id: int = Field(gt=0)
+    class Config:
+        schema_extra = {
+            'example':{
+                "user_id": 1
+            }
+        }
+

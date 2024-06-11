@@ -1,80 +1,67 @@
 import sqlite3
 from typing import Dict, List
 from passlib.context import CryptContext
+from ..database.connection import session, Base, engine
+from ..database.models import Users
+from ..router.type_in import AddUserSchemaInput, AuthUserSchemaInput
 
 bcrypt_context = CryptContext(schemes = ["bcrypt"], deprecated="auto")
-
+Base.metadata.create_all(bind=engine)
 
 class UserManager():
     """Manages the Users in the Database
     """
-    def __init__(self, database: str) -> None:
+    def __init__(self) -> None:
         """Initializes db"""
-        self.__database=database
-        self.__table="users"
+        try:
+            self.__db__=session()
+        except Exception as e:
+            return e
 
-    def insert_user(self, user_info: dict) -> Dict[str, str]:
-        """Inserts a user from the info of the user provided
+    def add_user(self, user_info: AddUserSchemaInput) -> Dict[str, str]:
+        """Adds an user from the info of the user provided
 
         Args:
-            user_info (dict): Info of the user
+            user_info (AddUserSchemaInput): Info of the user
 
         Returns:
             Dict[str, str]: The message of the register
         """
 
         try:
-            connection=sqlite3.connect(self.__database)
-            cursor = connection.cursor()
-            
-            if not self.validate_user_name(user_info["user_name"]):
+            if not self.validate_user_name(user_info.user_name):
                 return {"message": "This user name has been repeated"}
             
-            query = f'INSERT INTO {self.__table} (email, user_name, first_name, last_name, hashed_password, is_active) VALUES (?, ?, ?, ?, ?, ?)'
-            cursor.execute(query, 
-                        (
-                                user_info["email"], 
-                                user_info["user_name"], 
-                                user_info["first_name"], 
-                                user_info["last_name"], 
-                                bcrypt_context.hash(user_info["hashed_password"]), 
-                                user_info["is_active"]
-                            ))
-            connection.commit()
-            row_count = cursor.rowcount
-            if row_count > 0:
-                return {"message": "The user has been successfully inserted"}
-            else:
-                return {"message": "Failed to insert user"}
+            user_info.hashed_password=bcrypt_context.hash(user_info.hashed_password)
+            new_user = Users(**user_info.dict())
+            self.__db__.add(new_user)
+            self.__db__.commit()
+            return {"message": "This user has been added successfully"}
            
-        except sqlite3.Error as e:
+        except Exception as e:
             return {"message": f"The insert of the user has failed: {e}"}
         
         finally:
-            self.sql_close_connection(connection)
+            self.__db__.close()
     
-    def get_user_id(self, id: int) -> Dict[str, any]|bool:
+    def get_user_id(self, id: int) -> Dict[str, any]:
         """Gets an user by an id
 
         Args:
             id (int): Id to find
 
         Returns:
-            Dict[str, any]|bool: The info of the user or False if there is not an user with this id
+            Dict[str, any]: The info of the user or False if there is not an user with this id
         """
 
         try:
-            connection=sqlite3.connect(self.__database)
-            cursor = connection.cursor()
-            query = f"SELECT * FROM {self.__table} WHERE id = {id}"
-            cursor.execute(query)
-            connection.commit()
-            rows = cursor.fetchall()
-            return False if len(rows) <= 0 else {"user": self.get_user_output_format(rows)}
+            return {"users": self.__db__.query(Users).filter(Users.id==id).all()}
         
-        except sqlite3.Error as e:
-            self.sql_close_connection(connection)
+        except Exception as e:
             return {"message": f"The find of the user has failed: {e}"}
+        
+        finally:
+            self.__db__.close()
     
     def get_all_users(self) -> Dict[str, List[any]]:
         """Gets all users in the database
@@ -84,19 +71,15 @@ class UserManager():
         """
 
         try:
-            connection=sqlite3.connect(self.__database)
-            cursor = connection.cursor()
-            query = f"SELECT * FROM {self.__table}"
-            cursor.execute(query)
-            connection.commit()
-            rows = cursor.fetchall()
-            self.sql_close_connection(connection)
-            return {"users": self.get_user_output_format(rows)}
+            return {"users": self.__db__.query(Users).all()}
         
-        except sqlite3.Error as e:
+        except Exception as e:
             return {"message": f"Getting users has failed {e}"}
 
-    def auth_user(self, auth_info: dict) -> Dict[str, str]:
+        finally:
+            self.__db__.close()
+    
+    def auth_user(self, auth_info: AuthUserSchemaInput) -> Dict[str, str]:
         """Authenticates an user
 
         Args:
@@ -107,21 +90,24 @@ class UserManager():
         """
 
         try:
-            connection=sqlite3.connect(self.__database)
-            cursor = connection.cursor()
-            query = f'SELECT * FROM {self.__table} WHERE user_name="{auth_info["user_name"]}"'
-            print(query)
-            cursor.execute(query)
-            connection.commit()
-            rows = list(cursor.fetchall())
-            user = self.get_user_output_format(rows)
-            self.sql_close_connection(connection)
-            if bcrypt_context.verify(auth_info["hashed_password"] ,user[0]["hashed_password"]):
-                return {"message":"You have been authenticated successfully"}
+            if (
+                user := self.__db__.query(Users)
+                .filter(Users.user_name == auth_info.user_name)
+                .first()
+            ):
+                if bcrypt_context.verify(auth_info.hashed_password ,user.hashed_password):
+                    return {"message":"You have been authenticated successfully"}
+                else:
+                    return {"message":"The password is incorrect"}
+
             else:
-                return {"message":"The user_name or password is incorrect"}
-        except sqlite3.Error as e:
+                return {"message":"The user name does not exist"}
+        
+        except Exception as e:
             return {"message": f"Auth user has failed {e}"}
+
+        finally:
+            self.__db__.close()
 
     def validate_user_name(self, user_name: str) -> bool:
         """Validates if the user_name is repeated
@@ -133,45 +119,8 @@ class UserManager():
             bool: The user name validation
         """
         try:
-            connection=sqlite3.connect(self.__database)
-            cursor = connection.cursor()
-            query = f'SELECT * FROM {self.__table} WHERE user_name = "{user_name}"'
-            cursor.execute(query)
-            connection.commit()
-            rows = cursor.fetchall()
-            return len(rows) == 0
-        
+            return not self.__db__.query(Users).filter(Users.user_name==user_name).first()
         except sqlite3.Error as e:
-            self.sql_close_connection(connection)
             return {"message": f"The find of the user has failed: {e}"}
-    
-    def sql_close_connection(self, connection: sqlite3.Connection) -> None:
-        """Closes the connection
-
-        Args:
-            connection (sqlite3.Connection): The connection to close
-        """
-        connection.close()
-
-    @staticmethod
-    def get_user_output_format(rows: list) -> List[Dict[str, any]]:
-        """Gets tha output user format
-
-        Args:
-            rows (list): The rows obtained in the query
-
-        Returns:
-            List[Dict[str, any]]: The list with te right format
-        """
-        return [
-                {
-                    "id": row[0],
-                    "email": row[1],
-                    "user_name": row[2],
-                    "first_name": row[3],
-                    "last_name": row[4],
-                    "hashed_password": row[5],
-                    "is_active": row[6]
-                }
-                for row in rows
-            ]
+        finally:
+            self.__db__.close()
