@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Header
 from starlette import status
 from passlib.context import CryptContext
 from ApiTaskManager.auth.jwt_create import *
@@ -16,3 +16,8 @@ def validate_token(token:str):
     is_valid = verify_token(token)
     auth_info = read_token(token)
     return UserManager.auth_user(auth_info=auth_info) if is_valid == True else is_valid
+
+@auth.post("/auth_token")
+def auth_token(Authorization: str = Header(None)):
+    print(Authorization)
+    return True
