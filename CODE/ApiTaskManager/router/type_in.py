@@ -59,3 +59,7 @@ class DeleteTaskSchemaInput(BaseModel):
                 "id_task": 2
             }
         }
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str

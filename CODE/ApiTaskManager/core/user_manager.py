@@ -97,7 +97,7 @@ class UserManager():
                 .filter(Users.user_name == auth_info["user_name"])
                 .first()
             ):
-                if bcrypt_context.verify(auth_info["hashed_password"] ,user.hashed_password):
+                if bcrypt_context.verify(auth_info["hashed_password"], user.hashed_password):
                     return True
                 else:
                     return JSONResponse(content={"message":"The password is incorrect"}, status_code=401)

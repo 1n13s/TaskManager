@@ -7,7 +7,7 @@ import uvicorn
 
 app = FastAPI()
 app.include_router(router)
-app.include_router(auth, prefix="/login")
+app.include_router(auth)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)

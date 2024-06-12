@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Header
 from typing import Dict, List
 from starlette import status
 from passlib.context import CryptContext
+from ApiTaskManager.router.auth import get_access_token
 from ApiTaskManager.auth.jwt_create import *
 from ApiTaskManager.core.user_manager import UserManager
 from ApiTaskManager.core.tasks_manager import TaskManager
@@ -9,6 +10,7 @@ from .type_in import AddUserSchemaInput, AddTaskSchemaInput, DeleteTaskSchemaInp
 router = APIRouter()
 
 bcrypt_context = CryptContext(schemes = ["bcrypt"], deprecated="auto")
+
 
 def valid_tocken(autorization: str) -> Dict[str, str]|bool:
     """Validates if the token is valid
@@ -92,6 +94,19 @@ def get_user_tasks(Authorization: str = Header(None)):
         return TaskManager.get_user_tasks(user["user"].id)
     except Exception as e:
         JSONResponse(content={"message": f"Getting users has failed {e}"}, status_code=500)
+
+@router.post("/get-tasks_auth", status_code=status.HTTP_200_OK)
+def get_user_tasks_auth(user: dict = Depends(get_access_token)):
+    try:
+        
+        if user is None:
+            raise JSONResponse(content={"message": "user is not valid"})
+        
+        user_1 = UserManager.get_user_id(user_name=user["user_name"])
+        return TaskManager.get_user_tasks(user_1["user"].id)
+    except Exception as e:
+        JSONResponse(content={"message": f"Getting users has failed {e}"}, status_code=500)
+
 
 @router.delete("/delete-task", status_code=status.HTTP_200_OK)
 def delete_task(id_task: DeleteTaskSchemaInput, Authorization: str = Header(None)):
