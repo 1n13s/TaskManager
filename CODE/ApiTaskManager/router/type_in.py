@@ -27,7 +27,6 @@ class AddTaskSchemaInput(BaseModel):
     priority: int = Field(ge=1, le=5)
     title: str = Field(min_length=1)
     complete: bool
-    id_user: int
 
     class Config:
         schema_extra = {
@@ -35,8 +34,20 @@ class AddTaskSchemaInput(BaseModel):
                 "description": "Complete the project documentation",
                 "priority": 3,
                 "title": "Documentation",
-                "complete": False,
-                "id_user": 1
+                "complete": False
+            }
+        }
+
+class UpdateTaskShemaInput(AddTaskSchemaInput):
+    id: int
+    class Config:
+        schema_extra = {
+            'example':{
+                "id": 1,
+                "description": "Complete the project documentation",
+                "priority": 3,
+                "title": "Documentation",
+                "complete": False
             }
         }
 
@@ -59,6 +70,8 @@ class DeleteTaskSchemaInput(BaseModel):
                 "id_task": 2
             }
         }
+
+
 
 class Token(BaseModel):
     access_token: str
