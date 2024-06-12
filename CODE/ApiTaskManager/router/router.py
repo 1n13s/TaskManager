@@ -1,37 +1,58 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
+from typing import Dict, List
 from starlette import status
+from passlib.context import CryptContext
+from ApiTaskManager.router.auth import get_access_token
+from ApiTaskManager.auth.jwt_create import *
 from ApiTaskManager.core.user_manager import UserManager
 from ApiTaskManager.core.tasks_manager import TaskManager
-from .type_in import AddUserSchemaInput, AddTaskSchemaInput
-
+from .type_in import AddUserSchemaInput, AddTaskSchemaInput, DeleteTaskSchemaInput
 router = APIRouter()
 
-def get_user_manager():
-    return UserManager("../DATABASE/taskmanager.db")
-
-def get_task_manager():
-    return TaskManager("../DATABASE/taskmanager.db")
+bcrypt_context = CryptContext(schemes = ["bcrypt"], deprecated="auto")
 
 @router.get("/",status_code=status.HTTP_200_OK)
 def test_connection():
     """Root"""
-    return {"Message":"Connection Succesfully"}
+    return JSONResponse(content={"message":"Connected successfully"}, status_code=status.HTTP_200_OK)
 
 @router.post("/add_user", status_code=status.HTTP_201_CREATED)
-def add_user(user: AddUserSchemaInput, user_manager: UserManager = Depends(get_user_manager)):
+def add_user(user: AddUserSchemaInput):
     """Add user"""
-    return user_manager.insert_user(dict(user))
+    return UserManager.add_user(user)
 
-@router.get("/get-users", status_code= status.HTTP_200_OK)
-def get_all_users(user_manager: UserManager = Depends(get_user_manager)):
+@router.get("/get_users", status_code= status.HTTP_200_OK)
+def get_all_users():
     """Get users
     """
-    return user_manager.get_all_users()
+    return UserManager.get_all_users()
 
-@router.post("/add-task", status_code=status.HTTP_201_CREATED)
-def add_task(task: AddTaskSchemaInput, task_manager: TaskManager = Depends(get_task_manager)):
-    return task_manager.insert_task(dict(task))
+@router.post("/add_task", status_code=status.HTTP_201_CREATED)
+def add_task(task: AddTaskSchemaInput, user: dict = Depends(get_access_token)):
+    
+    user_info = UserManager.get_user_id(user_name=user["user_name"])
+    task.id_user = user_info["user"].id
 
-@router.get("/get-task", status_code=status.HTTP_200_OK)
-def get_all_tasks(task_manager: TaskManager = Depends(get_task_manager)):
-    return task_manager.get_all_tasks()
+    return TaskManager.insert_task(task)
+
+@router.post("/get_tasks", status_code=status.HTTP_200_OK)
+def get_user_tasks_auth(user: dict = Depends(get_access_token)):
+    try:
+        
+        if user is None:
+            raise JSONResponse(content={"message": "The user is not valid"})
+        
+        user_info = UserManager.get_user_id(user_name=user["user_name"])
+        return TaskManager.get_user_tasks(user_info["user"].id)
+    except Exception as e:
+        JSONResponse(content={"message": f"Getting users has failed {e}"}, status_code=500)
+
+@router.delete("/delete_task", status_code=status.HTTP_200_OK)
+def delete_task(id_task: DeleteTaskSchemaInput, user: dict = Depends(get_access_token)):
+    try:
+        user_info = UserManager.get_user_id(user_name=user["user_name"])
+
+        return TaskManager.delete_task(user_id=user_info["user"].id, task_id=id_task.id_task)
+    except Exception as e:
+        JSONResponse(content={"message": f"Getting users has failed {e}"}, status_code=500)
+

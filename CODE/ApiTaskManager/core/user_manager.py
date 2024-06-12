@@ -1,121 +1,130 @@
-import sqlite3
+from fastapi.responses import JSONResponse
 from typing import Dict, List
+from passlib.context import CryptContext
+from ..database.connection import session, Base, engine
+from ..database.models import Users
+from ..router.type_in import AddUserSchemaInput, AuthUserSchemaInput
+
+bcrypt_context = CryptContext(schemes = ["bcrypt"], deprecated="auto")
+Base.metadata.create_all(bind=engine)
+
 class UserManager():
     """Manages the Users in the Database
     """
-    def __init__(self, database: str) -> None:
-        """Initializes db"""
-        self.__database=database
-        self.__table="users"
-
-    def insert_user(self, user_info: dict) -> Dict[str, str]:
-        """Inserts a user from the info of the user provided
+    @staticmethod
+    def add_user(user_info: AddUserSchemaInput) -> Dict[str, str]:
+        """Adds an user from the info of the user provided
 
         Args:
-            user_info (dict): Info of the user
+            user_info (AddUserSchemaInput): Info of the user
 
         Returns:
             Dict[str, str]: The message of the register
         """
 
-        connection=sqlite3.connect(self.__database)
-        cursor = connection.cursor()
-        query = f'INSERT INTO {self.__table} (email, user_name, first_name, last_name, hashed_password, is_active) VALUES (?, ?, ?, ?, ?, ?)'
         try:
-            cursor.execute(query, 
-                           (
-                                user_info["email"], 
-                                user_info["user_name"], 
-                                user_info["first_name"], 
-                                user_info["last_name"], 
-                                user_info["hashed_password"], 
-                                user_info["is_active"]
-                            ))
-            connection.commit()
-            row_count = cursor.rowcount
-            if row_count > 0:
-                return {"message": "The user has been successfully inserted"}
-            else:
-                return {"message": "Failed to insert user"}
+            if not UserManager.validate_user_name(user_info.user_name):
+                return JSONResponse(content={"message": "This user name has been repeated"})
+            
+            user_info.hashed_password=bcrypt_context.hash(user_info.hashed_password)
+            new_user = Users(**user_info.dict())
+            db=session()
+            db.add(new_user)
+            db.commit()
+            return JSONResponse(content={"message": "This user has been added successfully"})
            
-        except sqlite3.Error as e:
-            return {"message": f"The insert of the user has failed: {e}"}
+        except Exception as e:
+            return JSONResponse(content={"message": f"The insert of the user has failed: {e}"})
         
         finally:
-            self.sql_close_connection(connection)
+            db.close()
     
-    def get_user_id(self, id: int) -> Dict[str, any]|bool:
+    @staticmethod
+    def get_user_id(user_id: int = None, user_name: str = None) -> Dict[str, any]:
         """Gets an user by an id
 
         Args:
             id (int): Id to find
 
         Returns:
-            Dict[str, any]|bool: The info of the user or False if there is not an user with this id
+            Dict[str, any]: The info of the user or False if there is not an user with this id
         """
 
-        connection=sqlite3.connect(self.__database)
-        cursor = connection.cursor()
-        query = f"SELECT * FROM {self.__table} WHERE id = {id}"
-
         try:
-            cursor.execute(query)
-            connection.commit()
-            rows = cursor.fetchall()
-            return False if len(rows) <= 0 else {"user": self.get_user_output_format(rows)}
-        
-        except sqlite3.Error as e:
-            return {"message": f"The find of the user has failed: {e}"}
+            db=session()
+            if not user_id: user = db.query(Users).filter(Users.user_name==user_name).first()
+            else: user = db.query(Users).filter(Users.id==user_id).first()
+            return {"user": user} if user else False
+        except Exception as e:
+            return JSONResponse(content={"message": f"The find of the user has failed: {e}"}, status_code=500)
 
         finally:
-            self.sql_close_connection(connection)
+            db.close()
     
-    def get_all_users(self) -> Dict[str, List[any]]:
+    @staticmethod
+    def get_all_users() -> Dict[str, List[any]]:
         """Gets all users in the database
 
         Returns:
             Dict[str, List[any]]: The users info
         """
-        connection=sqlite3.connect(self.__database)
-        cursor = connection.cursor()
-        query = f"SELECT * FROM {self.__table}"
+
         try:
-            cursor.execute(query)
-            connection.commit()
-            rows = cursor.fetchall()
-            return {"users": self.get_user_output_format(rows)}
-        except sqlite3.Error as e:
-            print("Getting users has failed", e)
+            db=session()
+            return {"users": db.query(Users).all()}
+        
+        except Exception as e:
+            return JSONResponse({"message": f"Getting users has failed {e}"})
 
-        self.sql_close_connection(connection)
-
-    def sql_close_connection(self, connection: sqlite3.Connection) -> None:
-        """Closes the connection
-
-        Args:
-            connection (sqlite3.Connection): The connection to close
-        """
-        connection.close()
-
+        finally:
+            db.close()
+    
     @staticmethod
-    def get_user_output_format(rows: list) -> List[Dict[str, any]]:
-        """Gets tha output user format
+    def auth_user(auth_info: dict) -> Dict[str, str]:
+        """Authenticates an user
 
         Args:
-            rows (list): The rows obtained in the query
+            auth_info (dict): The info of the user that wants to authenticated
 
         Returns:
-            List[Dict[str, any]]: The list with te right format
+            Dict[str, str]: If the user has authenticated successfully
         """
-        return [
-                {
-                    "id": row[0],
-                    "email": row[1],
-                    "user_name": row[2],
-                    "first_name": row[3],
-                    "last_name": row[4],
-                    "hashed_password": row[5],
-                    "is_active": row[6]
-                }
-                for row in rows
-            ]
+
+        try:
+            db=session()
+            if (
+                user := db.query(Users)
+                .filter(Users.user_name == auth_info["user_name"])
+                .first()
+            ):
+                if bcrypt_context.verify(auth_info["hashed_password"], user.hashed_password):
+                    return True
+                else:
+                    return JSONResponse(content={"message":"The password is incorrect"}, status_code=401)
+
+            else:
+                return JSONResponse(content={"message":"The user name does not exist"}, status_code=401)
+        
+        except Exception as e:
+            return JSONResponse(content={"message": f"Auth user has failed {e}"}, status_code=401)
+
+        finally:
+            db.close()
+
+    @staticmethod
+    def validate_user_name(user_name: str) -> bool:
+        """Validates if the user_name is repeated
+
+        Args:
+            user_name (str): The user name
+
+        Returns:
+            bool: The user name validation
+        """
+        try:
+            db=session()
+            return not db.query(Users).filter(Users.user_name==user_name).first()
+        except Exception as e:
+            return JSONResponse(content={"message": f"The find of the user has failed: {e}"})
+        finally:
+            db.close()

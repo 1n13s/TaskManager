@@ -1,100 +1,111 @@
-import sqlite3
+from fastapi.responses import JSONResponse
 from typing import Dict, List
 from .user_manager import UserManager
-class TaskManager():
-    """Manages the Tasks in the Database
-    """
-    def __init__(self, database: str) -> None:
-        """Initializes the task manager"""
-        self.__database=database
-        self.__table="tasks"
+from ..database.connection import session, Base, engine
+from ..database.models import Tasks
+from ..router.type_in import AddTaskSchemaInput
 
-    def insert_task(self, task_info: dict) -> Dict[str, str]:
-        """Inserts a user from the info of the user provided
+class TaskManager:
+    """Manages the Tasks in the Database"""
+    
+    @staticmethod
+    
+    @staticmethod
+    def insert_task(task_info: AddTaskSchemaInput) -> JSONResponse:
+        """Inserts a task from the info provided
 
         Args:
-            user_info (dict): Info of the user
+            task_info (AddTaskSchemaInput): Info of the task
 
         Returns:
             Dict[str, str]: The message of the register
         """
-
-        connection=sqlite3.connect(self.__database)
-        cursor = connection.cursor()
-        user=UserManager(self.__database)
-        if not user.get_user_id(task_info["id_user"]):
-            return {"message": "There is not any user with this id"}
-
-        query = f'INSERT INTO {self.__table} (description, priority, title, complete, id_user) VALUES (?, ?, ?, ?, ?)'
+        db = session()
         try:
-            cursor.execute(query, 
-                        (
-                                task_info["description"], 
-                                task_info["priority"], 
-                                task_info["title"], 
-                                task_info["complete"], 
-                                task_info["id_user"]
-                            ))
-            connection.commit()
-            row_count = cursor.rowcount
-            if row_count > 0:
-                return {"message": "The task has been successfully inserted"}
-            else:
-                return {"message": "Failed to insert task"}
-           
-        except sqlite3.Error as e:
-            return {"message": f"The insert of the task has failed: {e}"}
+            user = UserManager()
+            if not user.get_user_id(user_id=task_info.id_user):
+                return JSONResponse(content={"message": "This user id has not exist"}, status_code=404)
+            
+            new_task = Tasks(**task_info.dict())
+            db.add(new_task)
+            db.commit()
+
+            return JSONResponse(content={"message": "The task has been successfully inserted"})
+        
+        except Exception as e:
+            return JSONResponse(content={"message": f"The insert of the task has failed: {e}"}, status_code=500)
         
         finally:
-            self.sql_close_connection(connection)
+            db.close()
     
-    def get_all_tasks(self) -> Dict[str, List[any]]:
-        """Gets all tasks
+    @staticmethod
+    def delete_task(user_id: int, task_id: int) -> JSONResponse:
+        """Deletes a task
+
+        Args:
+            user_id (int): The id of the user
+            task_id (int): The id of the task
+
+        Returns:
+            JSONResponse: The message to delete status
+        """
+        db = session()
+        try:
+            
+            task_to_delete = db.query(Tasks).filter(Tasks.id == task_id).first()
+
+            if not task_to_delete:
+                return JSONResponse(content={"message": "The task does not exist"}, status_code=404)
+
+            if not TaskManager.validate_user_id(task_id=task_id, user_id=user_id):
+                return JSONResponse(content={"message": "User not authorizated"}, status_code=401)
+                        
+            db.delete(task_to_delete)
+            db.commit()
+            return JSONResponse(content={"message": "The task has been deleted"})
+        
+        except Exception as e:
+            return JSONResponse(content={"message": f"Deleting the task has failed: {e}"}, status_code=500)
+        
+        finally:
+            db.close()
+    
+    @staticmethod
+    def get_user_tasks(user_id: int) -> Dict[str, List[any]]|JSONResponse:
+        """Gets all tasks for a user
+
+        Args:
+            user_id (int): The id of the user
 
         Returns:
             Dict[str, List[any]]: Tasks info
         """
-
-        connection=sqlite3.connect(self.__database)
-        cursor = connection.cursor()
-        query = f"SELECT * FROM {self.__table}"
+        db = session()
         try:
-            cursor.execute(query)
-            connection.commit()
-            rows = cursor.fetchall()
-            return {"tasks": self.get_task_output_format(rows)}
-
-        except sqlite3.Error as e:
-            print("Getting users has failed", e)
-
-        self.sql_close_connection(connection)
-
-    def sql_close_connection(self, connection: sqlite3.Connection) -> None:
-        """Coloses the connection
-
-        Args:
-            connection (sqlite3.Connection): The connection to close
-        """
-        connection.close()
-
+            tasks = db.query(Tasks).filter(Tasks.id_user == user_id).all()
+            return {"tasks": tasks}
+        
+        except Exception as e:
+            return JSONResponse(content={"message": f"Getting tasks has failed: {e}"}, status_code=500)
+        
+        finally:
+            db.close()
+    
     @staticmethod
-    def get_task_output_format(rows: list) -> List[Dict[str,any]]:
-        """Gets tha output task format
+    def validate_user_id(task_id: int, user_id: int) -> bool:
+        """Validates if the user has access to a task
 
         Args:
-            rows (list): The rows obtained in the query
+            task_id (int): The id of the task
+            user_id (int): The id of the user
 
         Returns:
-            List[Dict[str, any]]: The list with te right format
+            bool: The validation result
         """
-        return [
-                {
-                    "id": row[0],
-                    "description": row[1],
-                    "priority": row[2],
-                    "title": row[3],
-                    "complete": row[4],
-                    "id_user": row[5]
-                }
-                for row in rows
-            ]
+        db = session()
+        try:
+            task = db.query(Tasks).filter(Tasks.id == task_id, Tasks.id_user == user_id).first()
+            return bool(task)
+        
+        finally:
+            db.close()

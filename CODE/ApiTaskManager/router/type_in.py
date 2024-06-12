@@ -1,4 +1,4 @@
-from pydantic import BaseModel,Field, validator
+from pydantic import BaseModel,Field
 from enum import Enum, IntEnum
 from typing import Optional
 from datetime import date
@@ -9,7 +9,7 @@ class AddUserSchemaInput(BaseModel):
     first_name: str = Field(min_length=1)
     last_name: str = Field(min_length=1)
     hashed_password: str = Field(min_length=1)
-    is_active: bool
+    is_admin: bool
     class Config:
         schema_extra = {
             'example':{
@@ -18,7 +18,7 @@ class AddUserSchemaInput(BaseModel):
                 "first_name": "Jhon",
                 "last_name": "Doe",
                 "hashed_password": "password123",
-                "is_active": True
+                "is_admin": True
             }
         }
 
@@ -40,3 +40,26 @@ class AddTaskSchemaInput(BaseModel):
             }
         }
 
+class AuthUserSchemaInput(BaseModel):
+    user_name: str = Field(min_length=1)
+    hashed_password: str = Field(min_length=1)
+    class Config:
+        schema_extra = {
+            'example':{
+                "user_name": "jhon_doe",
+                "hashed_password": "password123"
+            }
+        }
+
+class DeleteTaskSchemaInput(BaseModel):
+    id_task: int = Field(ge=1)
+    class Config:
+        schema_extra = {
+            'example':{
+                "id_task": 2
+            }
+        }
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
