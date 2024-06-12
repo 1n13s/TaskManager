@@ -1,6 +1,7 @@
 from jwt import encode, decode, exceptions
 from datetime import datetime, timedelta
 from fastapi.responses import JSONResponse
+from ApiTaskManager.core.user_manager import UserManager
 from OpenSSL import rand
 
 
@@ -22,6 +23,10 @@ def verify_token(token):
         return JSONResponse(content={"message": "Invalid Token"}, status_code=401)
     except exceptions.ExpiredSignatureError:
         return JSONResponse(content={"message": "Token Expired"}, status_code=401)
+    except Exception as e:
+        return JSONResponse(content={"message": f"The auth validation has failed {e}"}, status_code=500)
+    
 
 def read_token(token):
     return decode(token, key=SECRET, algorithms=ALGORITHM)
+

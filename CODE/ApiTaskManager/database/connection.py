@@ -8,7 +8,7 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 
 database_url = f"sqlite:///{os.path.join(current_dir,database_file_name)}"
 
-engine = create_engine(database_url, echo=True)
+engine = create_engine(database_url, echo=False)
 
 session = sessionmaker(autoflush=False, bind=engine)
 

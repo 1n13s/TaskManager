@@ -51,12 +51,11 @@ class AuthUserSchemaInput(BaseModel):
             }
         }
 
-class GetUserTasksSchemaInput(BaseModel):
-    user_id: int = Field(gt=0)
+class DeleteTaskSchemaInput(BaseModel):
+    id_task: int = Field(ge=1)
     class Config:
         schema_extra = {
             'example':{
-                "user_id": 1
+                "id_task": 2
             }
         }
-

@@ -40,7 +40,7 @@ class UserManager():
             db.close()
     
     @staticmethod
-    def get_user_id(id: int) -> Dict[str, any]:
+    def get_user_id(user_id: int = None, user_name: str = None) -> Dict[str, any]:
         """Gets an user by an id
 
         Args:
@@ -52,11 +52,12 @@ class UserManager():
 
         try:
             db=session()
-            return {"users": db.query(Users).filter(Users.id==id).all()}
-        
+            if not user_id: user = db.query(Users).filter(Users.user_name==user_name).first()
+            else: user = db.query(Users).filter(Users.id==user_id).first()
+            return {"user": user} if user else False
         except Exception as e:
-            return JSONResponse(content={"message": f"The find of the user has failed: {e}"})
-        
+            return JSONResponse(content={"message": f"The find of the user has failed: {e}"}, status_code=500)
+
         finally:
             db.close()
     
@@ -97,15 +98,15 @@ class UserManager():
                 .first()
             ):
                 if bcrypt_context.verify(auth_info["hashed_password"] ,user.hashed_password):
-                    return JSONResponse(content={"message":"You have been authenticated successfully"})
+                    return True
                 else:
-                    return JSONResponse(content={"message":"The password is incorrect"})
+                    return JSONResponse(content={"message":"The password is incorrect"}, status_code=401)
 
             else:
-                return JSONResponse(content={"message":"The user name does not exist"})
+                return JSONResponse(content={"message":"The user name does not exist"}, status_code=401)
         
         except Exception as e:
-            return JSONResponse(content={"message": f"Auth user has failed {e}"})
+            return JSONResponse(content={"message": f"Auth user has failed {e}"}, status_code=401)
 
         finally:
             db.close()
