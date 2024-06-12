@@ -11,122 +11,48 @@ router = APIRouter()
 
 bcrypt_context = CryptContext(schemes = ["bcrypt"], deprecated="auto")
 
-
-def valid_tocken(autorization: str) -> Dict[str, str]|bool:
-    """Validates if the token is valid
-
-    Args:
-        autorization (str): The authorization token
-
-    Returns:
-        bool|Dict[str, str]: Validates if the token is valid or why not
-    """
-    auth = autorization.split(" ")
-    return verify_token(auth[1])
-
-def valid_authorization(token: str) -> Dict[str,str]|bool:
-    """Validates if the user has autorization
-
-    Args:
-        token (str): The token to auth
-
-    Returns:
-        Dict[str,str]|bool: Validates if the user has autorization
-    """
-    return UserManager.auth_user(auth_info=read_token(token))    
-
 @router.get("/",status_code=status.HTTP_200_OK)
 def test_connection():
     """Root"""
-    return {"Message":"You have been connected successfully"}
+    return JSONResponse(content={"message":"Connected successfully"}, status_code=status.HTTP_200_OK)
 
 @router.post("/add_user", status_code=status.HTTP_201_CREATED)
 def add_user(user: AddUserSchemaInput):
     """Add user"""
     return UserManager.add_user(user)
 
-@router.get("/get-users", status_code= status.HTTP_200_OK)
+@router.get("/get_users", status_code= status.HTTP_200_OK)
 def get_all_users():
     """Get users
     """
     return UserManager.get_all_users()
 
-@router.post("/add-task", status_code=status.HTTP_201_CREATED)
-def add_task(task: AddTaskSchemaInput, Authorization: str = Header(None)):
-    auth = Authorization.split(" ")
-    token = auth[1]
-
-    is_valid = valid_tocken(Authorization)
+@router.post("/add_task", status_code=status.HTTP_201_CREATED)
+def add_task(task: AddTaskSchemaInput, user: dict = Depends(get_access_token)):
     
-    if is_valid != True:
-        return is_valid
-    
-    user_validation = valid_authorization(token)
-
-    if user_validation != True:
-        return user_validation
-    
-    auth_info = read_token(token)
-    user = UserManager.get_user_id(user_name=auth_info["user_name"])
-    task.id_user = user["user"].id
+    user_info = UserManager.get_user_id(user_name=user["user_name"])
+    task.id_user = user_info["user"].id
 
     return TaskManager.insert_task(task)
 
-@router.post("/get-tasks", status_code=status.HTTP_200_OK)
-def get_user_tasks(Authorization: str = Header(None)):
-    try:
-        auth = Authorization.split(" ")
-        token = auth[1]
-
-        is_valid = valid_tocken(Authorization)
-    
-        if is_valid != True:
-            return is_valid
-        
-        user_validation = valid_authorization(token)
-
-        if user_validation != True:
-            return user_validation
-        
-        auth_info = read_token(token)
-        user = UserManager.get_user_id(user_name=auth_info["user_name"])
-
-        return TaskManager.get_user_tasks(user["user"].id)
-    except Exception as e:
-        JSONResponse(content={"message": f"Getting users has failed {e}"}, status_code=500)
-
-@router.post("/get-tasks_auth", status_code=status.HTTP_200_OK)
+@router.post("/get_tasks", status_code=status.HTTP_200_OK)
 def get_user_tasks_auth(user: dict = Depends(get_access_token)):
     try:
         
         if user is None:
-            raise JSONResponse(content={"message": "user is not valid"})
+            raise JSONResponse(content={"message": "The user is not valid"})
         
-        user_1 = UserManager.get_user_id(user_name=user["user_name"])
-        return TaskManager.get_user_tasks(user_1["user"].id)
+        user_info = UserManager.get_user_id(user_name=user["user_name"])
+        return TaskManager.get_user_tasks(user_info["user"].id)
     except Exception as e:
         JSONResponse(content={"message": f"Getting users has failed {e}"}, status_code=500)
 
-
-@router.delete("/delete-task", status_code=status.HTTP_200_OK)
-def delete_task(id_task: DeleteTaskSchemaInput, Authorization: str = Header(None)):
+@router.delete("/delete_task", status_code=status.HTTP_200_OK)
+def delete_task(id_task: DeleteTaskSchemaInput, user: dict = Depends(get_access_token)):
     try:
-        auth = Authorization.split(" ")
-        token = auth[1]
+        user_info = UserManager.get_user_id(user_name=user["user_name"])
 
-        is_valid = valid_tocken(Authorization)
-    
-        if is_valid != True:
-            return is_valid
-        
-        user_validation = valid_authorization(token)
-
-        if user_validation != True:
-            return user_validation
-        
-        auth_info = read_token(token)
-        user = UserManager.get_user_id(user_name=auth_info["user_name"])
-
-        return TaskManager.delete_task(user_id=user["user"].id, task_id=id_task.id_task)
+        return TaskManager.delete_task(user_id=user_info["user"].id, task_id=id_task.id_task)
     except Exception as e:
         JSONResponse(content={"message": f"Getting users has failed {e}"}, status_code=500)
+

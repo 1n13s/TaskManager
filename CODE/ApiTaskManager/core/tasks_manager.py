@@ -1,5 +1,4 @@
 from fastapi.responses import JSONResponse
-from fastapi import HTTPException
 from typing import Dict, List
 from .user_manager import UserManager
 from ..database.connection import session, Base, engine
@@ -8,6 +7,8 @@ from ..router.type_in import AddTaskSchemaInput
 
 class TaskManager:
     """Manages the Tasks in the Database"""
+    
+    @staticmethod
     
     @staticmethod
     def insert_task(task_info: AddTaskSchemaInput) -> JSONResponse:

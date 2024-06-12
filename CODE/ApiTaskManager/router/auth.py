@@ -12,13 +12,16 @@ from ApiTaskManager.core.tasks_manager import TaskManager
 from ApiTaskManager.router.type_in import Token, AuthUserSchemaInput
 from .type_in import AddUserSchemaInput, AddTaskSchemaInput, AuthUserSchemaInput
 
-auth = APIRouter()
+auth = APIRouter(
+    prefix="/auth",
+    tags=["auth"]
+)
 
 SECRET = 'ge8ZXhERUrmTic6rcHYMKKOc75qbNdiy'
 ALGORITHM = 'HS256'
 
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_bearer = OAuth2PasswordBearer(tokenUrl='token')
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl='auth/token')
 
 def create_access_token(login_info: dict, expires_delta: timedelta) -> str:
     """Creates the token
@@ -32,7 +35,7 @@ def create_access_token(login_info: dict, expires_delta: timedelta) -> str:
     """
     return jwt.encode({**login_info, "exp": datetime.now(timezone.utc) + expires_delta}, key=SECRET, algorithm=ALGORITHM)
 
-def get_access_token(token: str = Depends(oauth2_bearer)):#Annotated[str, Depends(oauth2_bearer)]):
+def get_access_token(token: str = Depends(oauth2_bearer)) -> Dict[str, str]:
     """try:
         
         payload = jwt.decode(token, SECRET, algorithms=[ALGORITHM])
@@ -54,16 +57,9 @@ def get_access_token(token: str = Depends(oauth2_bearer)):#Annotated[str, Depend
         )
     except Exception as e:
         return JSONResponse(content={"message": f"The auth validation has failed {e}"}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-
-
-@auth.post("/get_token")
-def get_token(user: AuthUserSchemaInput):
-    return JSONResponse(content={"token": write_token(user.dict())})
 
 @auth.post("/token")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    # Aquí iría tu lógica para autenticar al usuario y generar el token
     auth_info = AuthUserSchemaInput(user_name=form_data.username, hashed_password=form_data.password)
     user_auth = UserManager.auth_user(auth_info=auth_info.dict())
     if user_auth !=True:
