@@ -3,7 +3,7 @@ from typing import Dict, List
 from .user_manager import UserManager
 from ..database.connection import session, Base, engine
 from ..database.models import Tasks
-from ..router.type_in import AddTaskSchemaInput
+from ..router.type_in import AddTaskSchemaInput, UpdateTaskShemaInput
 
 class TaskManager:
     """Manages the Tasks in the Database"""
@@ -11,7 +11,7 @@ class TaskManager:
     @staticmethod
     
     @staticmethod
-    def insert_task(task_info: AddTaskSchemaInput) -> JSONResponse:
+    def insert_task(user_id: int, task_info: AddTaskSchemaInput) -> JSONResponse:
         """Inserts a task from the info provided
 
         Args:
@@ -23,10 +23,11 @@ class TaskManager:
         db = session()
         try:
             user = UserManager()
-            if not user.get_user_id(user_id=task_info.id_user):
+            if not user.get_user_id(user_id=user_id):
                 return JSONResponse(content={"message": "This user id has not exist"}, status_code=404)
-            
-            new_task = Tasks(**task_info.dict())
+            task_dict = task_info.dict()
+            task_dict.update({"id_user": user_id})
+            new_task = Tasks(**task_dict)
             db.add(new_task)
             db.commit()
 
@@ -49,6 +50,7 @@ class TaskManager:
         Returns:
             JSONResponse: The message to delete status
         """
+
         db = session()
         try:
             
@@ -90,7 +92,66 @@ class TaskManager:
         
         finally:
             db.close()
+
+    @staticmethod
+    def update_tasks(user_id: int, task_info: UpdateTaskShemaInput) -> JSONResponse:
+        """Updates the task
+
+        Args:
+            user_id (int): The id of the user
+            task_info (UpdateTaskShemaInput): The info of the task
+
+        Returns:
+            JSONResponse: The update status
+        """
+
+        db = session()
+        print(task_info.dict())
+        try:
+            task_to_update = db.query(Tasks).filter(Tasks.id == task_info.id).first()
+            if not task_to_update:
+                return JSONResponse(content={"message": "The task does not exist"}, status_code=404)
+
+            if not TaskManager.validate_user_id(task_id=task_info.id, user_id=user_id):
+                print(f"userid: {user_id}")
+                return JSONResponse(content={"message": "User not authorizated"}, status_code=401)
+            
+            for key, value in task_info.dict().items():
+                setattr(task_to_update, key, value)
+
+            db.commit()
+            return JSONResponse(content={"message": "The task has been updated"})
+        
+        except Exception as e:
+            return JSONResponse(content={"message": f"Update the task has failed: {e}"}, status_code=500)
+        
+        finally:
+            db.close()        
+
+    @staticmethod
+    def update_task_state(user_id: int, task_id: int, state: bool) -> JSONResponse:
+        
+        db = session()
+        try:
+            task_to_update = db.query(Tasks).filter(Tasks.id == task_id).first()
+            
+            if not task_to_update:
+                return JSONResponse(content={"message": "The task does not exist"}, status_code=404)
+            
+            if not TaskManager.validate_user_id(task_id=task_id, user_id=user_id):
+                return JSONResponse(content={"message": "User not authorizated"}, status_code=401)
+
+            task_to_update.complete = state
+            db.commit()
+            return JSONResponse(content={"message": "The task has been updated"})
+        
+        except Exception as e:
+            return JSONResponse(content={"message": f"Update task state has failed: {e}"}, status_code=500)
+        
+        finally:
+            db.close()
     
+
     @staticmethod
     def validate_user_id(task_id: int, user_id: int) -> bool:
         """Validates if the user has access to a task
@@ -105,6 +166,7 @@ class TaskManager:
         db = session()
         try:
             task = db.query(Tasks).filter(Tasks.id == task_id, Tasks.id_user == user_id).first()
+            print(task)
             return bool(task)
         
         finally:
