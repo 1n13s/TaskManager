@@ -81,6 +81,17 @@ class UpdateTaskStateInput(UseTaskIdSchemaInput):
             }
         }
 
+class ChangeUserPassword(BaseModel):
+    current_password: str
+    new_password: str
+
+    class Config:
+        schema_extra = {
+            'example':{
+                "current_password": "currentpassword",
+                "new_password": "newpassword"
+            }
+        }
 
 class Token(BaseModel):
     access_token: str

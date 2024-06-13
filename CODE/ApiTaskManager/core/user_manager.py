@@ -3,7 +3,7 @@ from typing import Dict, List
 from passlib.context import CryptContext
 from ..database.connection import session, Base, engine
 from ..database.models import Users
-from ..router.type_in import AddUserSchemaInput, AuthUserSchemaInput
+from ..router.type_in import AddUserSchemaInput, ChangeUserPassword
 
 bcrypt_context = CryptContext(schemes = ["bcrypt"], deprecated="auto")
 Base.metadata.create_all(bind=engine)
@@ -26,7 +26,7 @@ class UserManager():
             if not UserManager.validate_user_name(user_info.user_name):
                 return JSONResponse(content={"message": "This user name has been repeated"})
             
-            user_info.hashed_password=bcrypt_context.hash(user_info.hashed_password)
+            user_info.hashed_password = bcrypt_context.hash(user_info.hashed_password)
             new_user = Users(**user_info.dict())
             db=session()
             db.add(new_user)
@@ -108,6 +108,32 @@ class UserManager():
         except Exception as e:
             return JSONResponse(content={"message": f"Auth user has failed {e}"}, status_code=401)
 
+        finally:
+            db.close()
+
+    @staticmethod
+    def change_password(change_password: ChangeUserPassword, user_id: int):
+        db = session()
+        try:
+            user_to_update = db.query(Users).filter(Users.id==user_id).first()
+
+            if not user_to_update:
+                return JSONResponse(content={"message": "The user does not exist"}, status_code=404)
+
+            if not bcrypt_context.verify(change_password.current_password, user_to_update.hashed_password):
+                return JSONResponse(content={"message": "The password is incorrect"}, status_code=401)
+            
+            if bcrypt_context.verify(change_password.new_password, user_to_update.hashed_password):
+                return JSONResponse(content={"message": "The new password should be different to the current password"}, status_code=401)
+
+            user_to_update.hashed_password = bcrypt_context.hash(change_password.new_password)
+            db.commit()
+
+            return JSONResponse(content={"message": "Tha password has been changed successfully"})
+           
+        except Exception as e:
+            return JSONResponse(content={"message": f"The change of the password has failed: {e}"}, status_code=500)
+        
         finally:
             db.close()
 

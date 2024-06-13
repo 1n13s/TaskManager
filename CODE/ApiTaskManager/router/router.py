@@ -6,7 +6,7 @@ from ApiTaskManager.router.auth import get_access_token
 from ApiTaskManager.auth.jwt_create import *
 from ApiTaskManager.core.user_manager import UserManager
 from ApiTaskManager.core.tasks_manager import TaskManager
-from .type_in import AddUserSchemaInput, AddTaskSchemaInput, UseTaskIdSchemaInput, UpdateTaskShemaInput, UpdateTaskStateInput
+from .type_in import AddUserSchemaInput, AddTaskSchemaInput, UseTaskIdSchemaInput, UpdateTaskShemaInput, UpdateTaskStateInput, ChangeUserPassword
 router = APIRouter()
 
 bcrypt_context = CryptContext(schemes = ["bcrypt"], deprecated="auto")
@@ -70,6 +70,15 @@ def update_state(task: UpdateTaskStateInput, user: dict = Depends(get_access_tok
             task_id=task.id_task,
             state=task.complete
         )
+    
+    except Exception as e:
+        JSONResponse(content={"message": f"Getting users has failed {e}"}, status_code=500)
+
+@router.put("/update_password", status_code=status.HTTP_200_OK)
+def update_password(change_password: ChangeUserPassword, user: dict = Depends(get_access_token)):
+    try:
+        user_info = UserManager.get_user_id(user_name=user["user_name"])
+        return UserManager.change_password(change_password=change_password,  user_id=user_info["user"].id)
     
     except Exception as e:
         JSONResponse(content={"message": f"Getting users has failed {e}"}, status_code=500)
