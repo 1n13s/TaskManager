@@ -129,15 +129,24 @@ class TaskManager:
             db.close()        
 
     @staticmethod
-    def complete_task(user_id: int, task_id: int) -> JSONResponse:
+    def update_task_state(user_id: int, task_id: int, state: bool) -> JSONResponse:
         
         db = session()
         try:
             task_to_update = db.query(Tasks).filter(Tasks.id == task_id).first()
-            task_info: UpdateTaskShemaInput = task_to_update
+            
+            if not task_to_update:
+                return JSONResponse(content={"message": "The task does not exist"}, status_code=404)
+            
+            if not TaskManager.validate_user_id(task_id=task_id, user_id=user_id):
+                return JSONResponse(content={"message": "User not authorizated"}, status_code=401)
+
+            task_to_update.complete = state
+            db.commit()
+            return JSONResponse(content={"message": "The task has been updated"})
         
         except Exception as e:
-            return JSONResponse(content={"message": f"Deleting the task has failed: {e}"}, status_code=500)
+            return JSONResponse(content={"message": f"Update task state has failed: {e}"}, status_code=500)
         
         finally:
             db.close()

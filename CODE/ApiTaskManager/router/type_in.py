@@ -62,7 +62,7 @@ class AuthUserSchemaInput(BaseModel):
             }
         }
 
-class DeleteTaskSchemaInput(BaseModel):
+class UseTaskIdSchemaInput(BaseModel):
     id_task: int = Field(ge=1)
     class Config:
         schema_extra = {
@@ -71,6 +71,15 @@ class DeleteTaskSchemaInput(BaseModel):
             }
         }
 
+class UpdateTaskStateInput(UseTaskIdSchemaInput):
+    complete: bool
+    class Config:
+        schema_extra = {
+            'example':{
+                "id_task": 1,
+                "complete": True
+            }
+        }
 
 
 class Token(BaseModel):

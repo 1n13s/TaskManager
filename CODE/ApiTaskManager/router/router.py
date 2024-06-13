@@ -6,7 +6,7 @@ from ApiTaskManager.router.auth import get_access_token
 from ApiTaskManager.auth.jwt_create import *
 from ApiTaskManager.core.user_manager import UserManager
 from ApiTaskManager.core.tasks_manager import TaskManager
-from .type_in import AddUserSchemaInput, AddTaskSchemaInput, DeleteTaskSchemaInput, UpdateTaskShemaInput
+from .type_in import AddUserSchemaInput, AddTaskSchemaInput, UseTaskIdSchemaInput, UpdateTaskShemaInput, UpdateTaskStateInput
 router = APIRouter()
 
 bcrypt_context = CryptContext(schemes = ["bcrypt"], deprecated="auto")
@@ -45,7 +45,7 @@ def get_user_tasks_auth(user: dict = Depends(get_access_token)):
         JSONResponse(content={"message": f"Getting users has failed {e}"}, status_code=500)
 
 @router.delete("/delete_task", status_code=status.HTTP_200_OK)
-def delete_task(id_task: DeleteTaskSchemaInput, user: dict = Depends(get_access_token)):
+def delete_task(id_task: UseTaskIdSchemaInput, user: dict = Depends(get_access_token)):
     try:
         user_info = UserManager.get_user_id(user_name=user["user_name"])
 
@@ -61,3 +61,15 @@ def update_task(task: UpdateTaskShemaInput, user: dict = Depends(get_access_toke
     except Exception as e:
         JSONResponse(content={"message": f"Getting users has failed {e}"}, status_code=500)
 
+@router.put("/update_state", status_code=status.HTTP_200_OK)
+def update_state(task: UpdateTaskStateInput, user: dict = Depends(get_access_token)):
+    try:
+        user_info = UserManager.get_user_id(user_name=user["user_name"])
+        return TaskManager.update_task_state(
+            user_id=user_info["user"].id,
+            task_id=task.id_task,
+            state=task.complete
+        )
+    
+    except Exception as e:
+        JSONResponse(content={"message": f"Getting users has failed {e}"}, status_code=500)
