@@ -1,4 +1,4 @@
-#Main file
+#Main app file
 from fastapi import FastAPI
 from ApiTaskManager.router.router import router
 from ApiTaskManager.router.tasks import task
