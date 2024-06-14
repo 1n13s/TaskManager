@@ -8,7 +8,9 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 
 database_url = f"sqlite:///{os.path.join(current_dir,database_file_name)}"
 
-engine = create_engine(database_url, echo=False)
+DATABASE_URL='postgresql://postgres:22348936@localhost/TaskManagerDatabase'
+
+engine = create_engine(DATABASE_URL, echo=False)
 
 session = sessionmaker(autoflush=False, bind=engine)
 
