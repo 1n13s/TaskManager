@@ -12,11 +12,6 @@ user = APIRouter(
 
 bcrypt_context = CryptContext(schemes = ["bcrypt"], deprecated="auto")
 
-@user.get("/",status_code=status.HTTP_200_OK)
-def test_connection():
-    """Root"""
-    return JSONResponse(content={"message":"Connected successfully"}, status_code=status.HTTP_200_OK)
-
 @user.post("/add", status_code=status.HTTP_201_CREATED)
 def add_user(user: AddUserSchemaInput):
     """Add user"""
