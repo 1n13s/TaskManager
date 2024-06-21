@@ -2,9 +2,11 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from starlette import status
 from passlib.context import CryptContext
-from ApiTaskManager.router.auth import get_access_token
-from ApiTaskManager.core.user_manager import UserManager
+
+from .auth import get_access_token
+from ..core.user_manager import UserManager
 from .type_in import AddUserSchemaInput, ChangeUserPassword
+
 user = APIRouter(
     prefix="/user",
     tags=["user"]

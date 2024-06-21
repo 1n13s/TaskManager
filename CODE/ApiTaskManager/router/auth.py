@@ -4,13 +4,10 @@ from starlette.responses import JSONResponse
 from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 from jose import jwt, JWSError
-from typing import Optional, Annotated
 
-from ApiTaskManager.auth.jwt_create import *
-from ApiTaskManager.core.user_manager import UserManager
-from ApiTaskManager.core.tasks_manager import TaskManager
-from ApiTaskManager.router.type_in import Token, AuthUserSchemaInput
-from .type_in import AddUserSchemaInput, AddTaskSchemaInput, AuthUserSchemaInput
+from ..auth.jwt_create import *
+from ..core.user_manager import UserManager
+from .type_in import AuthUserSchemaInput
 
 auth = APIRouter(
     prefix="/auth",

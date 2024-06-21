@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from starlette import status
 from passlib.context import CryptContext
-from ApiTaskManager.router.auth import get_access_token
-from ApiTaskManager.core.user_manager import UserManager
-from ApiTaskManager.core.tasks_manager import TaskManager
+from .auth import get_access_token
+from ..core.user_manager import UserManager
+from ..core.tasks_manager import TaskManager
 from .type_in import AddTaskSchemaInput, UseTaskIdSchemaInput, UpdateTaskShemaInput, UpdateTaskStateInput
 
 task = APIRouter(
