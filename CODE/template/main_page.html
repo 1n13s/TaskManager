@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager - Bienvenido</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/main_page_styles.css') }}">
+</head>
+<body>
+    
+    <div class="container">
+        <div class="header">
+            <h1>Task Manager</h1>
+        </div>
+        <nav class="menu">
+            <ul>
+                <li><a href="#agregar-tarea">Agregar Tarea</a></li>
+                <li><a href="#tareas-pendientes">Revisar Tareas Pendientes</a></li>
+            </ul>
+        </nav>
+        <div class="task-list">
+            <h2 id="tareas-pendientes">Tareas Pendientes</h2>
+            <ul>
+                <li>
+                    <input type="checkbox" id="tarea1">
+                    <label for="tarea1">Comprar comida</label>
+                </li>
+                <li>
+                    <input type="checkbox" id="tarea2">
+                    <label for="tarea2">Terminar proyecto de trabajo</label>
+                </li>
+                <li>
+                    <input type="checkbox" id="tarea3">
+                    <label for="tarea3">Llamar al doctor</label>
+                </li>
+            </ul>
+        </div>
+        <div class="main-content" id="agregar-tarea">
+            <h2>Agregar Tarea</h2>
+            <form action="/agregar-tarea" method="POST">
+                <div class="form-group">
+                    <label for="title">Título:</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Descripción:</label>
+                    <textarea id="description" name="description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="priority">Prioridad:</label>
+                    <select id="priority" name="priority" required>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                </div>
+                <button type="submit" class="cta-button">Agregar Tarea</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
