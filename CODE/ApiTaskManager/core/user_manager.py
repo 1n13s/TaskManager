@@ -100,13 +100,13 @@ class UserManager():
                 if bcrypt_context.verify(auth_info["hashed_password"], user.hashed_password):
                     return True
                 else:
-                    return JSONResponse(content={"message":"The password is incorrect"}, status_code=401)
+                    return {"message":"The password is incorrect"}
 
             else:
-                return JSONResponse(content={"message":"The user name does not exist"}, status_code=401)
+                return {"message":"The user name does not exist"}
         
         except Exception as e:
-            return JSONResponse(content={"message": f"Auth user has failed {e}"}, status_code=401)
+            return {"message": f"Auth user has failed {e}"}
 
         finally:
             db.close()

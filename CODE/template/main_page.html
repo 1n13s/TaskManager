@@ -23,18 +23,30 @@
             <ul>
                 <li>
                     <input type="checkbox" id="tarea1">
-                    <label for="tarea1">Comprar comida</label>
+                    <label for="tarea1">Comprar comida de cena</label>
+                    <button class="cta-button" onclick="borrarTarea(this)">Borrar</button>
                 </li>
                 <li>
                     <input type="checkbox" id="tarea2">
                     <label for="tarea2">Terminar proyecto de trabajo</label>
+                    <button onclick="borrarTarea(this)">Borrar</button>
                 </li>
                 <li>
                     <input type="checkbox" id="tarea3">
                     <label for="tarea3">Llamar al doctor</label>
+                    <button class="delete-button" onclick="borrarTarea(this)">Borrar</button>
                 </li>
             </ul>
         </div>
+        
+        <script>
+            function borrarTarea(button) {
+                var tarea = button.parentElement;
+                tarea.remove();
+            }
+        </script>
+        
+        
         <div class="main-content" id="agregar-tarea">
             <h2>Agregar Tarea</h2>
             <form action="/agregar-tarea" method="POST">
