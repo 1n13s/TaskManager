@@ -26,3 +26,8 @@ async def test(request: Request):
 @front.get("/update_task")
 async def test(request: Request):
     return templates.TemplateResponse("update_task.html", {"request": request})
+
+@front.get("/add_user")
+async def test(request: Request):
+    return templates.TemplateResponse("add_user.html", {"request": request})
+    

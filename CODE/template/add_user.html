@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/main_page_styles.css') }}">
+    <title>Formulario de Usuarios</title>
+</head>
+<body>
+
+    <div class="main-content" id="agregar-usuario">
+        <h2>Agregar Usuario</h2>
+        <form action="/submit_user" method="POST">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="user_name">Nombre de Usuario:</label>
+                <input type="text" id="user_name" name="user_name" required>
+            </div>
+            <div class="form-group">
+                <label for="first_name">Nombre:</label>
+                <input type="text" id="first_name" name="first_name">
+            </div>
+            <div class="form-group">
+                <label for="last_name">Apellido:</label>
+                <input type="text" id="last_name" name="last_name">
+            </div>
+            <div class="form-group">
+                <label for="hashed_password">Contraseña:</label>
+                <input type="password" id="hashed_password" name="hashed_password" required>
+            </div>
+            <button type="submit" class="cta-button">Agregar Usuario</button>
+        </form>
+    </div>
+
+</body>
+</html>

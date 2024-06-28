@@ -74,7 +74,7 @@ def obtain_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
 @auth.post("/login")
 async def login(request: Request, token: dict = Depends(obtain_access_token)):
     if "access_token" not in token.keys():
-        return token
+        response = RedirectResponse("/taskmanager/login", status_code=status.HTTP_302_FOUND)
     else: 
         #response = JSONResponse(content={"message": "Successfully logged in"})
         response = RedirectResponse("/taskmanager/main_page", status_code=status.HTTP_302_FOUND)
@@ -86,6 +86,6 @@ async def login(request: Request, token: dict = Depends(obtain_access_token)):
         
         response.set_cookie(**cookie_params)
         
-        return response
+    return response
     #response.set_cookie(key="auth_token",value=token, httponly=True)
 
